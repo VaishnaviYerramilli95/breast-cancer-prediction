@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breast Cancer Risk Predictor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="glow-bg-1"></div>
+    <div class="glow-bg-2"></div>
+    <div class="dashboard-container">
+        <header class="app-header">
+            <div class="logo-area">
+                <span class="icon">🩺</span>
+                <h1>OncoShield AI</h1>
+            </div>
+            <p class="subtitle">Advanced Mammography Analysis & Risk Prediction</p>
+        </header>
+        <div class="main-grid">
+            <section class="card form-card">
+                <div class="card-header">
+                    <h2>Patient Mammography Metrics</h2>
+                    <p class="card-desc">Enter the standardized microcalcification features from the report.</p>
+                </div>
+                <div class="presets-section">
+                    <span class="preset-label">Quick Test Presets:</span>
+                    <div class="preset-buttons">
+                        <button type="button" class="btn btn-outline btn-benign" onclick="loadPreset('benign')">🟢 Normal Case</button>
+                        <button type="button" class="btn btn-outline btn-malignant" onclick="loadPreset('malignant')">🔴 Suspicious Case</button>
+                    </div>
+                </div>
+                <form action="/predict" method="post" id="prediction-form">
+                    <div class="inputs-grid">
+                        <div class="input-group">
+                            <label for="radius">Radius <span class="tooltip-icon" data-tooltip="Standardized mean distance from center to points on the outer perimeter.">?</span></label>
+                            <input type="number" step="any" id="radius" name="radius" placeholder="e.g. 0.23" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="texture">Texture <span class="tooltip-icon" data-tooltip="Standardized standard deviation of gray-scale values.">?</span></label>
+                            <input type="number" step="any" id="texture" name="texture" placeholder="e.g. -0.15" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="perimeter">Perimeter <span class="tooltip-icon" data-tooltip="Standardized size of the core perimeter.">?</span></label>
+                            <input type="number" step="any" id="perimeter" name="perimeter" placeholder="e.g. -0.27" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="area">Area <span class="tooltip-icon" data-tooltip="Standardized area of microcalcification cluster.">?</span></label>
+                            <input type="number" step="any" id="area" name="area" placeholder="e.g. 0.83" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="smoothness">Smoothness <span class="tooltip-icon" data-tooltip="Standardized local variation in radius lengths.">?</span></label>
+                            <input type="number" step="any" id="smoothness" name="smoothness" placeholder="e.g. -0.38" required>
+                        </div>
+                        <div class="input-group">
+                            <label for="compactness">Compactness <span class="tooltip-icon" data-tooltip="Standardized perimeter^2 / area - 1.0.">?</span></label>
+                            <input type="number" step="any" id="compactness" name="compactness" placeholder="e.g. 0.48" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-submit">
+                        <span class="btn-text">Generate Assessment</span>
+                        <span class="btn-icon">⚡</span>
+                    </button>
+                </form>
+            </section>
+            <section class="card result-card {% if result %}active{% endif %}">
+                {% if result %}
+                    <div class="result-content animate-fade-in">
+                        <div class="card-header centered">
+                            <h2>Assessment Result</h2>
+                            <p class="card-desc">Machine Learning Diagnostic Evaluation</p>
+                        </div>
+                        {% if 'Detected' in result %}
+                            <div class="status-banner status-warning">
+                                <span class="banner-icon">⚠️</span>
+                                <div class="banner-text">
+                                    <h3>Malignancy Detected</h3>
+                                    <p>The patient's features strongly resemble cancerous mammography clusters.</p>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="status-banner status-success">
+                                <span class="banner-icon">✅</span>
+                                <div class="banner-text">
+                                    <h3>Benign / Normal</h3>
+                                    <p>Features fall within normal parameters. No cancer detected.</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                        <div class="probability-container">
+                            <div class="probability-dial">
+                                <svg class="progress-ring" width="160" height="160">
+                                    <circle class="progress-ring__circle-bg" stroke="rgba(255,255,255,0.06)" stroke-width="12" fill="transparent" r="70" cx="80" cy="80"/>
+                                    <circle class="progress-ring__circle" stroke="{% if 'Detected' in result %}#f43f5e{% else %}#10b981{% endif %}" stroke-width="12" fill="transparent" r="70" cx="80" cy="80" stroke-dasharray="439.82" stroke-dashoffset="{{ 439.82 - (probability * 439.82) }}" />
+                                </svg>
+                                <div class="probability-value">
+                                    <span class="percentage">{{ (probability * 100) | round | int }}%</span>
+                                    <span class="label">Risk Probability</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="technical-stats">
+                            <h4>Feature Vector Evaluated:</h4>
+                            <div class="stats-table">
+                                <div class="stat-row"><span>Model Accuracy</span><strong>91.0%</strong></div>
+                                <div class="stat-row"><span>Sensitivity (Recall)</span><strong>96.2%</strong></div>
+                                <div class="stat-row"><span>Classifier Type</span><strong>SMOTE + LogReg</strong></div>
+                            </div>
+                        </div>
+                        <div class="disclaimer-box">
+                            <span class="disclaimer-title">⚠️ Clinical Disclaimer</span>
+                            <p>This tool is an AI prototype for screen assistance. Results are indicative only and do not replace professional medical evaluations.</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="idle-state">
+                        <div class="idle-graphic">
+                            <div class="pulse-ring"></div>
+                            <span class="pulse-icon">📡</span>
+                        </div>
+                        <h3>Awaiting Assessment Input</h3>
+                        <p>Fill out the clinical mammography measurements on the left and submit the form to run the AI diagnostics pipeline.</p>
+                        <div class="model-meta-info">
+                            <div class="info-pill"><strong>Dataset:</strong> Mammography Cluster Microcalcifications</div>
+                            <div class="info-pill"><strong>Model:</strong> StandardScaler + SMOTE + Balanced Logistic Reg</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+        </div>
+        <footer class="app-footer-bar">
+            <p>OncoShield AI v1.0.0 &bull; Powered by scikit-learn & Flask</p>
+        </footer>
+    </div>
+    <script>
+        const presets = {
+            benign: { radius: -0.20, texture: -0.15, perimeter: -0.25, area: -0.30, smoothness: -0.10, compactness: -0.15 },
+            malignant: { radius: 2.00, texture: -1.50, perimeter: -2.00, area: 2.00, smoothness: 1.50, compactness: 1.50 }
+        };
+        function loadPreset(type) {
+            const data = presets[type];
+            if (!data) return;
+            for (const key in data) {
+                const input = document.getElementById(key);
+                if (input) {
+                    input.value = data[key];
+                    input.classList.add('populated');
+                }
+            }
+            const formCard = document.querySelector('.form-card');
+            formCard.classList.add('highlight-flash');
+            setTimeout(() => { formCard.classList.remove('highlight-flash'); }, 600);
+        }
+        window.addEventListener('DOMContentLoaded', () => {
+            const inputs = document.querySelectorAll('.input-group input');
+            inputs.forEach(input => {
+                if (input.value !== "") { input.classList.add('populated'); }
+                input.addEventListener('blur', () => {
+                    if (input.value !== "") { input.classList.add('populated'); } else { input.classList.remove('populated'); }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
